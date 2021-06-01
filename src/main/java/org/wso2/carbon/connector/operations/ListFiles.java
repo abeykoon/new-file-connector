@@ -43,6 +43,9 @@ import org.wso2.carbon.connector.utils.Const;
 import org.wso2.carbon.connector.utils.Utils;
 import org.wso2.carbon.connector.utils.SimpleFileFiler;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 
 /**
  * Implements File listing capability
@@ -189,9 +192,22 @@ public class ListFiles extends AbstractConnector {
      * @param pattern pattern to match
      */
     private FileObject[] getFilesAndFolders(FileObject folder, String pattern) throws FileSystemException {
+
         FileFilter fileFilter = new SimpleFileFiler(pattern);
         FileFilterSelector fileFilterSelector = new FileFilterSelector(fileFilter);
-        return folder.findFiles(fileFilterSelector);
+        ArrayList<FileObject> matchingFilesAndFolders =
+                new ArrayList<>(Arrays.asList(folder.findFiles(fileFilterSelector)));
+        //when a pattern exists folder.findFiles does not return folders
+        if (!StringUtils.isEmpty(pattern)) {
+            FileObject[] children = folder.getChildren();
+            for (FileObject child : children) {
+                if (child.isFolder()) {
+                    matchingFilesAndFolders.add(child);
+                }
+            }
+        }
+        FileObject[] filesWithFolders = new FileObject[matchingFilesAndFolders.size()];
+        return matchingFilesAndFolders.toArray(filesWithFolders);
     }
 
     /**
